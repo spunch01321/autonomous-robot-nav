@@ -3,17 +3,689 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autonomous Robot Navigation System</title>
+    <title>Autonomous Robot Navigation System - Portfolio Demo</title>
+    <meta name="description" content="Interactive demonstration of autonomous mobile robot navigation with A* pathfinding, LIDAR sensing, computer vision, and PID control">
+    <meta name="author" content="Your Name">
+    
+    <!-- React and Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* GitHub Corner */
+        .github-corner {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        
+        .github-corner svg {
+            fill: #fff;
+            color: #667eea;
+            width: 80px;
+            height: 80px;
+        }
+        
+        .github-corner:hover .octo-arm {
+            animation: octocat-wave 560ms ease-in-out;
+        }
+        
+        @keyframes octocat-wave {
+            0%, 100% { transform: rotate(0); }
+            20%, 60% { transform: rotate(-25deg); }
+            40%, 80% { transform: rotate(10deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .github-corner svg {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        /* Custom animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        /* Canvas container */
+        canvas {
+            background: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Button hover effects */
+        button {
+            transition: all 0.2s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
 </head>
 <body>
+    <!-- GitHub Corner Link -->
+    <a href="https://github.com/spunch01321/autonomous-robot-nav" class="github-corner" aria-label="View source on GitHub" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 250 250" aria-hidden="true">
+            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+            <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+            <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+        </svg>
+    </a>
+
+    <!-- Main App Container -->
     <div id="root"></div>
+
+    <!-- React Application -->
     <script type="text/babel">
-        // Paste the entire React component code here from the artifact
-        // Then add: ReactDOM.render(<AutonomousRobotSimulation />, document.getElementById('root'));
+        const { useState, useEffect, useRef } = React;
+
+        // ============================================
+        // SVG Icon Components
+        // ============================================
+        const Play = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+        );
+
+        const Pause = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        );
+
+        const RotateCcw = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10"></polyline>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+        );
+
+        const Target = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        );
+
+        const Navigation = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+        );
+
+        const Eye = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        );
+
+        const Radio = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="2"></circle>
+                <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+            </svg>
+        );
+
+        // ============================================
+        // Main Application Component
+        // ============================================
+        const AutonomousRobotSimulation = () => {
+          const canvasRef = useRef(null);
+          const [isRunning, setIsRunning] = useState(false);
+          const [robotPos, setRobotPos] = useState({ x: 50, y: 50 });
+          const [robotAngle, setRobotAngle] = useState(0);
+          const [targetPos, setTargetPos] = useState({ x: 550, y: 350 });
+          const [obstacles, setObstacles] = useState([
+            { x: 200, y: 150, radius: 30 },
+            { x: 350, y: 250, radius: 40 },
+            { x: 450, y: 150, radius: 35 },
+            { x: 300, y: 350, radius: 25 }
+          ]);
+          const [path, setPath] = useState([]);
+          const [detectedObjects, setDetectedObjects] = useState([]);
+          const [lidarData, setLidarData] = useState([]);
+          const [speed, setSpeed] = useState(0);
+          const animationRef = useRef(null);
+
+          // ============================================
+          // A* Pathfinding Algorithm
+          // ============================================
+          const findPath = (start, goal, obstacles) => {
+            const gridSize = 20;
+            const cols = Math.floor(600 / gridSize);
+            const rows = Math.floor(400 / gridSize);
+            
+            const toGrid = (pos) => ({
+              x: Math.floor(pos.x / gridSize),
+              y: Math.floor(pos.y / gridSize)
+            });
+            
+            const toWorld = (grid) => ({
+              x: grid.x * gridSize + gridSize / 2,
+              y: grid.y * gridSize + gridSize / 2
+            });
+            
+            const isObstacle = (gridPos) => {
+              const worldPos = toWorld(gridPos);
+              return obstacles.some(obs => {
+                const dist = Math.sqrt(
+                  Math.pow(worldPos.x - obs.x, 2) + 
+                  Math.pow(worldPos.y - obs.y, 2)
+                );
+                return dist < obs.radius + 20;
+              });
+            };
+            
+            const heuristic = (a, b) => 
+              Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+            
+            const startGrid = toGrid(start);
+            const goalGrid = toGrid(goal);
+            
+            const openSet = [startGrid];
+            const cameFrom = new Map();
+            const gScore = new Map();
+            const fScore = new Map();
+            
+            const key = (pos) => `${pos.x},${pos.y}`;
+            
+            gScore.set(key(startGrid), 0);
+            fScore.set(key(startGrid), heuristic(startGrid, goalGrid));
+            
+            while (openSet.length > 0) {
+              openSet.sort((a, b) => 
+                (fScore.get(key(a)) || Infinity) - (fScore.get(key(b)) || Infinity)
+              );
+              
+              const current = openSet.shift();
+              
+              if (current.x === goalGrid.x && current.y === goalGrid.y) {
+                const path = [];
+                let temp = current;
+                while (cameFrom.has(key(temp))) {
+                  path.unshift(toWorld(temp));
+                  temp = cameFrom.get(key(temp));
+                }
+                return path;
+              }
+              
+              const neighbors = [
+                { x: current.x + 1, y: current.y },
+                { x: current.x - 1, y: current.y },
+                { x: current.x, y: current.y + 1 },
+                { x: current.x, y: current.y - 1 }
+              ];
+              
+              for (const neighbor of neighbors) {
+                if (neighbor.x < 0 || neighbor.x >= cols || 
+                    neighbor.y < 0 || neighbor.y >= rows || 
+                    isObstacle(neighbor)) {
+                  continue;
+                }
+                
+                const tentativeG = (gScore.get(key(current)) || Infinity) + 1;
+                
+                if (tentativeG < (gScore.get(key(neighbor)) || Infinity)) {
+                  cameFrom.set(key(neighbor), current);
+                  gScore.set(key(neighbor), tentativeG);
+                  fScore.set(key(neighbor), tentativeG + heuristic(neighbor, goalGrid));
+                  
+                  if (!openSet.some(p => p.x === neighbor.x && p.y === neighbor.y)) {
+                    openSet.push(neighbor);
+                  }
+                }
+              }
+            }
+            
+            return [];
+          };
+
+          // ============================================
+          // LIDAR Sensor Simulation
+          // ============================================
+          const simulateLidar = (pos, angle, obstacles) => {
+            const rays = [];
+            const numRays = 16;
+            const maxRange = 150;
+            
+            for (let i = 0; i < numRays; i++) {
+              const rayAngle = angle + (i * 2 * Math.PI / numRays);
+              let minDist = maxRange;
+              
+              for (const obs of obstacles) {
+                const dx = obs.x - pos.x;
+                const dy = obs.y - pos.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) - obs.radius;
+                
+                const angleToObs = Math.atan2(dy, dx);
+                const angleDiff = Math.abs(((angleToObs - rayAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
+                
+                if (angleDiff < 0.2 && dist < minDist) {
+                  minDist = Math.max(0, dist);
+                }
+              }
+              
+              rays.push({
+                angle: rayAngle,
+                distance: minDist,
+                x: pos.x + Math.cos(rayAngle) * minDist,
+                y: pos.y + Math.sin(rayAngle) * minDist
+              });
+            }
+            
+            return rays;
+          };
+
+          // ============================================
+          // Computer Vision Object Detection
+          // ============================================
+          const detectObjects = (pos, angle, obstacles) => {
+            const fov = Math.PI / 3; // 60 degrees
+            const viewRange = 200;
+            const detected = [];
+            
+            obstacles.forEach((obs, idx) => {
+              const dx = obs.x - pos.x;
+              const dy = obs.y - pos.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const angleToObs = Math.atan2(dy, dx);
+              const angleDiff = Math.abs(((angleToObs - angle + Math.PI) % (2 * Math.PI)) - Math.PI);
+              
+              if (dist < viewRange && angleDiff < fov / 2) {
+                detected.push({
+                  id: idx,
+                  x: obs.x,
+                  y: obs.y,
+                  distance: dist,
+                  type: 'obstacle'
+                });
+              }
+            });
+            
+            return detected;
+          };
+
+          // ============================================
+          // PID Controller
+          // ============================================
+          const pidController = (current, target, dt) => {
+            const kp = 2.0;  // Proportional gain
+            const ki = 0.1;  // Integral gain
+            const kd = 0.5;  // Derivative gain
+            
+            const error = target - current;
+            const derivative = error / dt;
+            
+            return kp * error + kd * derivative;
+          };
+
+          // ============================================
+          // Main Simulation Loop
+          // ============================================
+          useEffect(() => {
+            if (!isRunning) return;
+            
+            const simulate = () => {
+              setRobotPos(prevPos => {
+                // Update sensor data
+                const newLidar = simulateLidar(prevPos, robotAngle, obstacles);
+                setLidarData(newLidar);
+                
+                const detected = detectObjects(prevPos, robotAngle, obstacles);
+                setDetectedObjects(detected);
+                
+                // Check if path exists
+                if (path.length === 0) return prevPos;
+                
+                // Get current waypoint
+                const target = path[0];
+                const dx = target.x - prevPos.x;
+                const dy = target.y - prevPos.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // Reached waypoint, move to next
+                if (dist < 10) {
+                  setPath(prev => prev.slice(1));
+                  return prevPos;
+                }
+                
+                // Calculate desired heading
+                const targetAngle = Math.atan2(dy, dx);
+                let angleDiff = targetAngle - robotAngle;
+                // Normalize angle to [-PI, PI]
+                angleDiff = ((angleDiff + Math.PI) % (2 * Math.PI)) - Math.PI;
+                
+                // Apply PID control for smooth turning
+                const newAngle = robotAngle + pidController(0, angleDiff, 0.016) * 0.016;
+                setRobotAngle(newAngle);
+                
+                // Calculate movement speed (slower when turning)
+                const moveSpeed = Math.min(2, dist / 10);
+                setSpeed(moveSpeed);
+                
+                // Update position
+                const newX = prevPos.x + Math.cos(newAngle) * moveSpeed;
+                const newY = prevPos.y + Math.sin(newAngle) * moveSpeed;
+                
+                return { x: newX, y: newY };
+              });
+              
+              animationRef.current = requestAnimationFrame(simulate);
+            };
+            
+            animationRef.current = requestAnimationFrame(simulate);
+            
+            return () => {
+              if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+              }
+            };
+          }, [isRunning, path, robotAngle, obstacles]);
+
+          // ============================================
+          // Canvas Rendering
+          // ============================================
+          useEffect(() => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 600, 400);
+            
+            // Draw grid
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < 600; i += 20) {
+              ctx.beginPath();
+              ctx.moveTo(i, 0);
+              ctx.lineTo(i, 400);
+              ctx.stroke();
+            }
+            for (let i = 0; i < 400; i += 20) {
+              ctx.beginPath();
+              ctx.moveTo(0, i);
+              ctx.lineTo(600, i);
+              ctx.stroke();
+            }
+            
+            // Draw planned path
+            if (path.length > 0) {
+              ctx.strokeStyle = '#3b82f6';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([5, 5]);
+              ctx.beginPath();
+              ctx.moveTo(robotPos.x, robotPos.y);
+              path.forEach(p => ctx.lineTo(p.x, p.y));
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+            
+            // Draw LIDAR rays
+            ctx.strokeStyle = '#10b98140';
+            ctx.lineWidth = 1;
+            lidarData.forEach(ray => {
+              ctx.beginPath();
+              ctx.moveTo(robotPos.x, robotPos.y);
+              ctx.lineTo(ray.x, ray.y);
+              ctx.stroke();
+            });
+            
+            // Draw camera vision cone
+            ctx.fillStyle = '#fbbf2420';
+            ctx.beginPath();
+            ctx.moveTo(robotPos.x, robotPos.y);
+            ctx.arc(robotPos.x, robotPos.y, 200, 
+              robotAngle - Math.PI / 6, robotAngle + Math.PI / 6);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Draw obstacles
+            obstacles.forEach(obs => {
+              ctx.fillStyle = '#ef4444';
+              ctx.beginPath();
+              ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+              ctx.fill();
+              
+              // Highlight detected obstacles
+              if (detectedObjects.some(d => d.x === obs.x && d.y === obs.y)) {
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+              }
+            });
+            
+            // Draw target
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(targetPos.x, targetPos.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(targetPos.x, targetPos.y - 10);
+            ctx.lineTo(targetPos.x, targetPos.y + 10);
+            ctx.moveTo(targetPos.x - 10, targetPos.y);
+            ctx.lineTo(targetPos.x + 10, targetPos.y);
+            ctx.stroke();
+            
+            // Draw robot
+            ctx.save();
+            ctx.translate(robotPos.x, robotPos.y);
+            ctx.rotate(robotAngle);
+            
+            // Robot body
+            ctx.fillStyle = '#2563eb';
+            ctx.fillRect(-15, -12, 30, 24);
+            
+            // Robot direction indicator
+            ctx.fillStyle = '#1e40af';
+            ctx.beginPath();
+            ctx.moveTo(15, 0);
+            ctx.lineTo(25, -8);
+            ctx.lineTo(25, 8);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Robot "camera"
+            ctx.fillStyle = '#dbeafe';
+            ctx.fillRect(5, -8, 8, 16);
+            
+            ctx.restore();
+          }, [robotPos, robotAngle, targetPos, obstacles, path, lidarData, detectedObjects]);
+
+          // ============================================
+          // Event Handlers
+          // ============================================
+          const handleCanvasClick = (e) => {
+            const rect = canvasRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            setTargetPos({ x, y });
+            const newPath = findPath(robotPos, { x, y }, obstacles);
+            setPath(newPath);
+          };
+
+          const handleReset = () => {
+            setIsRunning(false);
+            setRobotPos({ x: 50, y: 50 });
+            setRobotAngle(0);
+            setPath([]);
+            setSpeed(0);
+            setLidarData([]);
+            setDetectedObjects([]);
+          };
+
+          // ============================================
+          // Render UI
+          // ============================================
+          return (
+            <div className="w-full max-w-4xl mx-auto fade-in">
+              <div className="bg-white rounded-lg shadow-2xl p-6">
+                {/* Header */}
+                <div className="mb-6">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                    Autonomous Mobile Robot Navigation
+                  </h1>
+                  <p className="text-gray-600">
+                    Interactive demo showcasing A* pathfinding, LIDAR sensing, computer vision, and PID control
+                  </p>
+                </div>
+                
+                {/* Sensor Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Navigation />
+                      <span className="text-xs font-semibold text-gray-700">Position</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      X: {robotPos.x.toFixed(0)}<br/>
+                      Y: {robotPos.y.toFixed(0)}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Target />
+                      <span className="text-xs font-semibold text-gray-700">Speed</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {speed.toFixed(2)} m/s
+                    </div>
+                  </div>
+                  
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Radio />
+                      <span className="text-xs font-semibold text-gray-700">LIDAR</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {lidarData.length} rays
+                    </div>
+                  </div>
+                  
+                  <div className="bg-yellow-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Eye />
+                      <span className="text-xs font-semibold text-gray-700">Vision</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {detectedObjects.length} objects
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Canvas */}
+                <canvas
+                  ref={canvasRef}
+                  width={600}
+                  height={400}
+                  onClick={handleCanvasClick}
+                  className="w-full border-2 border-gray-300 rounded-lg cursor-crosshair mb-6"
+                />
+                
+                {/* Controls */}
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <button
+                    onClick={() => setIsRunning(!isRunning)}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    {isRunning ? <Pause /> : <Play />}
+                    {isRunning ? 'Pause' : 'Start'}
+                  </button>
+                  
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                  >
+                    <RotateCcw />
+                    Reset
+                  </button>
+                  
+                  <div className="flex-1 flex items-center justify-end text-sm text-gray-600">
+                    💡 Click anywhere to set a new destination
+                  </div>
+                </div>
+                
+                {/* Technical Details */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+                  <h3 className="font-bold text-gray-800 mb-3 text-lg">🤖 Technical Implementation</h3>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="font-semibold text-gray-700 mb-1">🎯 A* Pathfinding</p>
+                      <p className="text-gray-600">Optimal path planning with guaranteed shortest route and dynamic obstacle avoidance</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-700 mb-1">📡 LIDAR Simulation</p>
+                      <p className="text-gray-600">16-ray distance sensing with 150m range for 360° environmental awareness</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-700 mb-1">👁️ Computer Vision</p>
+                      <p className="text-gray-600">Object detection in 60° FOV with 200m range for visual obstacle tracking</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-700 mb-1">🎮 PID Controller</p>
+                      <p className="text-gray-600">Real-time velocity and heading control for smooth, stable navigation</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Footer */}
+                <div className="mt-6 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
+                  <p>
+                    Built with React • View full documentation on{' '}
+                    <a href="https://github.com/YOUR_USERNAME/autonomous-robot-nav" 
+                       className="text-blue-600 hover:text-blue-700 font-medium"
+                       target="_blank" 
+                       rel="noopener noreferrer">
+                      GitHub
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // ============================================
+        // Render Application
+        // ============================================
+        ReactDOM.render(<AutonomousRobotSimulation />, document.getElementById('root'));
     </script>
 </body>
 </html>
